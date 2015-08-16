@@ -1,0 +1,17 @@
+{
+  "name": "csv-uploader",
+  "version": "0.0.0",
+  "description": "Read UK Police csv files and upload them to an ES cluster",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app.js"
+  },
+  "author": "Marc du Boucheron <m.duboucheron@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "commander": "^2.8.1",
+    "elasticsearch": "^6.0.0",
+    "fast-csv": "^0.6.0"
+  }
+}

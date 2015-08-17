@@ -20,6 +20,12 @@
     "commander": "^2.8.1",
     "elasticsearch": "^6.0.0",
     "fast-csv": "^0.6.0",
+    "glob": "^5.0.14",
+    "graceful-fs": "^4.1.2",
+    "grunt-contrib-jshint": "^0.11.2",
+    "load-grunt-tasks": "^3.2.0",
+    "q": "^1.4.1",
+    "underscore": "^1.8.3",
     "winston": "^1.0.1"
   }
 }

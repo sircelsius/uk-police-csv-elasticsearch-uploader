@@ -6,7 +6,8 @@ var program = require('commander'),
   writer = require('./utils/writer.js'),
   winston = require('winston'),
   q = require('q'),
-  _ = require('underscore');
+  _ = require('underscore'),
+  fs = require('fs');
 
 // PROGRAM OPTIONS PARSING
 program
@@ -16,7 +17,7 @@ program
   .option('-p, --port [port]', 'ES port')
   .parse(process.argv);
 
-var filename = program.filename? program.filename :null,
+var filename = program.filename ? program.filename :null,
   host = program.host ? program.host : 'localhost',
   port = program.port ? program.port : '9200';
 
@@ -40,12 +41,19 @@ var uploadForfile = function(input){
     });
 };
 
+var timestamp = fs._toUnixTimestamp(new Date()).toString(),
+  timestamp_truncate = timestamp.substring(0, timestamp.indexOf('.')),
+  logger_name = './logs/uploader-' + timestamp_truncate + '.log';
+
+
 // LOGGING
 winston.add(winston.transports.File, {
-  filename: './logs/uploader-info.log',
+  filename: logger_name,
   level: 'debug',
   logstash: true
 });
+
+winston.info('LOGGING TO: ' + logger_name);
 
 winston.info('\n--------------------------' +
   '\nUK Police data uploader' +

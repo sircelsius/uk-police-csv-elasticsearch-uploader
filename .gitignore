@@ -1,6 +1,6 @@
 # BASED ON GITHUB'S NODE GITIGNORE
 #Logs
-logs
+# logs
 *.log
 npm-debug.log*
 

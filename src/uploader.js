@@ -1,7 +1,7 @@
 'use strict';
 
 var program = require('commander'),
-  reader = require('./utils/csvReader.js'),
+  reader = require('./utils/reader.js'),
   processor = require('./utils/processor.js'),
   writer = require('./utils/writer.js'),
   winston = require('winston'),
@@ -20,6 +20,26 @@ var filename = program.filename? program.filename :null,
   host = program.host ? program.host : 'localhost',
   port = program.port ? program.port : '9200';
 
+var uploadForfile = function(input){
+  var arr = [];
+  return reader.readCSV(input, arr)
+    .then(function(data) {
+      return processor.process(data);
+    },
+    function(err) {
+      winston.error('UPLOADER - Unable to read CSV ' + input + ': ' + err);
+    })
+    .then(function(data1) {
+      winston.info('UPLOADER - Sending ' + _.size(data1) + ' entries to writer.');
+      return writer.writeBulk('uk_police_data_test', 'police_report', data1);
+    })
+    .then(function(){
+      winston.info('UPLOADER - Done uploading ' + _.size(arr) + ' entries.');
+      arr = null;
+      winston.info('UPLOADER - Memory cleared for ' + input);
+    });
+};
+
 // LOGGING
 winston.add(winston.transports.File, {
   filename: './logs/uploader-info.log',
@@ -27,106 +47,36 @@ winston.add(winston.transports.File, {
   logstash: true
 });
 
-// winston.add(winston.transports.File, {
-//   filename: './logs/uploader-debug.log',
-//   level: 'debug',
-//   logstash: true
-// });
-
-winston.remove(winston.transports.Console);
-
-winston.add(winston.transports.Console, {
-  colorize: true
-});
-
-winston.info('--------------------------' +
+winston.info('\n--------------------------' +
   '\nUK Police data uploader' +
-  '\n-----------------------' +
+  '\n--------------------------' +
   '\nRunning with options:' +
   '\nFile:\t' + filename +
   '\nHost:\t' + host + 
-  '\nPort:\t' + port);
+  '\nPort:\t' + port + '\n\n');
 
 writer.open(host, port);
 
-var uploadForfile = function(input){
-  var arr = [];
-  reader.readCSV(input, arr)
-  .then(function() {
-    winston.info('Extracted ' + arr.length + ' entries from ' + input);
-  },
-  function(err){
-    winston.error('Unable to extract data from ' + input);
-  })
-  .then(function() {
-    processor.process(arr)
-  })
-  .then(function(){
-    writer.createIndex('uk_police_data_test')
-    .then(
-      function(success){
-        winston.info('Created index uk_police_data_test.');
-      },
-      function(error){
-        winston.info('Couldn\'t create index uk_police_data_test.');
-      }
-    )
-    .then(
-      function(){
-        writer.putMapping('uk_police_data_test')
-          .then(function() {
-            writer.writeBulk('uk_police_data_test', arr);
-          })
-          .done();
-      }
-    );
-  })
-  .done();
-}
-
-if(filename != null) {
-  uploadForfile(filename);
+if(filename !== null) {
+  uploadForfile(filename)
+    .done();
 }
 else {
   var glob = require('glob');
 
-  winston.info('No filename provider, recursively indexing all files within resources dir');
-  var res = [];
+  winston.info('No filename provided, recursively indexing all files within resources dir');
 
   glob('./resources/**/*.csv', function(err, files){
-    winston.info('Found ' + _.size(files) + ' files to upload.');
-    _.each(files, function(file){
-      reader.readCSV(file, res)
-      .then(function() {
-        winston.info('Extracted ' + res.length + ' entries from files');
-      },
-      function(err){
-        winston.error('Unable to extract data from files');
+    winston.info('UPLOADER - Found ' + _.size(files) + ' files to upload.');
+    q.all(
+      _.map(files, function(el, index){
+        winston.info('UPLOADER  - Starting upload of file ' + index + ' - ' + el);
+        return uploadForfile(el);
       })
-      .then(function() {
-        processor.process(res)
-      })
-      .then(function(){
-        writer.createIndex('uk_police_data_test')
-        .then(
-          function(success){
-            winston.info('Created index uk_police_data_test.');
-          },
-          function(error){
-            winston.info('Couldn\'t create index uk_police_data_test.');
-          }
-        )
-        .then(
-          function(){
-            writer.putMapping('uk_police_data_test')
-              .then(function() {
-                writer.writeBulk('uk_police_data_test', res);
-              })
-              .done();
-          }
-        );
-      })
-      .done();
+    )
+    .then(function(){
+      winston.info('UPLOADER - Done Bulk uploading for ' + _.size(files) + ' files.');
     })
+    .done();
   });
 }

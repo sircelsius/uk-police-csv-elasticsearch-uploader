@@ -15,7 +15,7 @@ var client,
 open = function(host, port){
   client = new elasticsearch.Client({
     host: host + ':' + port,
-    log: 'debug'
+    log: 'info'
   });
 };
 
@@ -23,10 +23,6 @@ createIndex = function(index){
   return client.indices.create({
     index: index
   });
-};
-
-var checkIndexExists = function(index){
-  return client.cat.health();
 };
 
 putMapping = function(index){
@@ -41,59 +37,66 @@ putMapping = function(index){
       }
     }
   });
-}
-
-write = function(index, arr){
-  _.each(arr, function(el){
-    client.index({
-      index: index,
-      type: 'police_record',
-      body: el
-    }, function(){});
-  });
 };
 
-writeBulk = function(index, arr){
+write = function(index, type, arr){
+  winston.info('WRITER - Received ' + _.size(arr) + ' processed entries to write to ' + index);
+  var d = q.defer();
+
+  q.all(_.map(arr, function(el){
+    return client.index({
+        index: index,
+        type: 'police_record',
+        body: el
+      })
+      .then(function(success){
+        winston.info('WRITER - Wrote entry: ' + success);
+      });
+    })
+  )
+  .then(function(data){
+    winston.info('WRITER - Wrote entries.');
+    d.resolve(data);
+  })
+  .done();
+
+  return d.promise;
+};
+
+writeBulk = function(index, type, arr){
+  var d = q.defer();
   var body = [];
   
-  _.each(arr, function(data){
-    var month = data.Month ? parseInt(data.Month.substr(5, 6)) : 0;
-    var year = data.Month ? parseInt(data.Month.substr(0, 4)) : 0;
-
-    var lat = parseFloat(data.Latitude) ? parseFloat(data.Latitude) : 0;
-    var lon = parseFloat(data.Longitude) ? parseFloat(data.Longitude) : 0; 
-
-    var loc = {
-      lat: lat,
-      lon: lon
-    };
-
-    var el = {
-      police_id: data['Crime ID'],
-      month: month,
-      year: year,
-      reportedBy: data['Reported by'],
-      fallsWithin: data['Falls within'],
-      loc: loc,
-      location: data['Location'],
-      LSOACode: data['LSOA code'],
-      LSOAName: data['LSOA name'],
-      crimeType: data['Crime type'],
-      outcome: data['Last outcome'] 
-    };
-    body.push({
-      index: {
-        _index: index,
-        _type: 'police_record'
-      }
-    });
-    body.push(el);
-  });
-
-  return client.bulk({
+  q.all(
+    _.map(arr, function(el){
+      var d1 = q.defer();
+      body.push({
+        index: {
+          _index: index,
+          _type: type
+        }
+      });
+      body.push(el);
+      d1.resolve(body);
+      return d1.promise;
+    })
+  )
+  .then(function() {
+    winston.info('WRITER - Started bulk indexing of ' + _.size(arr) + ' entries');
+    return client.bulk({
       body: body
     });
-}
+  })
+  .then(function() {
+    winston.info('WRITER - Done bulk writing ' + _.size(arr) + ' entries.');
+    d.resolve(arr);
+    body = null;
+    arr = null;
+  })
+  .done();
+
+  return d.promise;
+};
 
 module.exports = {
   open: open,

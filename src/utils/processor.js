@@ -8,11 +8,28 @@ var process,
   extractRecordFromCSV;
   
 process = function(arr){
-  _.each(arr, function(el, index){
-    winston.debug('Current(' + index + ') element ID: ' + el['Crime ID']);
-    var data = extractRecordFromCSV(el);
-    arr[index] = data;
+  winston.info('PROCESSOR - Started processing ' + _.size(arr) + ' entries.');
+  var d = q.defer();
+
+  var target = [];
+
+  q.all(
+    _.map(arr, function(el, index){
+      var d1 = q.defer();
+      winston.debug('PROCESSOR - Current(' + index + ') element ID: ' + el['Crime ID']);
+      var data = extractRecordFromCSV(el);
+      winston.debug('PROCESSOR - Current data: ' + JSON.stringify(data));
+      target.push(data);
+      d1.resolve(target);
+      return d1.promise;
+    })
+  )
+  .then(function() {
+    winston.info('PROCESSOR - Processed ' + _.size(target) + ' entries.');
+    d.resolve(target);
   });
+
+  return d.promise;
 };
 
 extractRecordFromCSV = function(data) {
@@ -34,13 +51,13 @@ extractRecordFromCSV = function(data) {
     reportedBy: data['Reported by'],
     fallsWithin: data['Falls within'],
     loc: loc,
-    location: data['Location'],
+    location: data.Location,
     LSOACode: data['LSOA code'],
     LSOAName: data['LSOA name'],
     crimeType: data['Crime type'],
     outcome: data['Last outcome'] 
   };
-}
+};
 
 module.exports = {
   process: process

@@ -1,6 +1,6 @@
 'use strict';
 
-var reader = require('../../../src/utils/csvReader.js'),
+var reader = require('../../../src/utils/reader.js'),
   winston = require('winston');
 
 describe("A test", function(){

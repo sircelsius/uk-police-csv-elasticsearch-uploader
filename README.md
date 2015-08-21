@@ -19,6 +19,7 @@ This will read all the files within the `input` folder and try to upload them to
 
 ## Structure
 
-  * [utils/csvReader.js](utils/csvReader.js): reads a CSV file.
-  * [utils/esUploader.js](utisl/csvReader.js): uploads content to an ES cluster.
-  * [uploader.js](app.js): combines both of the above tasks to batch upload documents.
+  * [src/tils/reader.js](src/utils/reader.js): reads a CSV file.
+  * [src/utils.processor.js](/src/utils/processor.js): processes entries.
+  * [src/utils/writer.js](src/utils/reader.js): uploads content to an ES cluster.
+  * [src/uploader.js](src/uploader.js): combines both of the above tasks to batch upload documents.

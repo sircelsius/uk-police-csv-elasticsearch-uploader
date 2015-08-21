@@ -24,7 +24,7 @@ var filename = program.filename ? program.filename :null,
   index = program.index ? program.index : 'uk_police';
 
 var timestamp = fs._toUnixTimestamp(new Date()).toString(),
-  timestamp_truncate = timestamp.substring(0, timestamp.indexOf('.')),
+  timestamp_truncate = timestamp.replace('.', '_'),
   logger_name = './logs/uploader-' + timestamp_truncate + '.log';
 
 

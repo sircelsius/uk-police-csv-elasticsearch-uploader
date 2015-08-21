@@ -16,6 +16,7 @@ program
   .option('-h, --host [host]', 'ES host')
   .option('-p, --port [port]', 'ES port')
   .option('-i, --index [index]', 'ES index')
+  .option('-l, --logstash', 'Format logs for logstash')
   .parse(process.argv);
 
 var filename = program.filename ? program.filename :null,
@@ -32,7 +33,7 @@ var timestamp = fs._toUnixTimestamp(new Date()).toString(),
 winston.add(winston.transports.File, {
   filename: logger_name,
   level: 'debug',
-  logstash: true
+  logstash: program.logstash ? program.logstash : false
 });
 
 winston.info('\n--------------------------' +

@@ -1,6 +1,6 @@
 {
   "name": "csv-uploader",
-  "version": "0.0.0",
+  "version": "0.0.2-SNAPSHOT",
   "description": "Read UK Police csv files and upload them to an ES cluster",
   "author": {
     "name": "Marc du Boucheron",

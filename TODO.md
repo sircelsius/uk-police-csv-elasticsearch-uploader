@@ -3,4 +3,4 @@
   * [ ] [O] [v1.0.0] Manage memory when batch inserting / inserting large files.
   * [ ] [1] [v0.0.2] Add `index` cli argument to specify index name.
   * [ ] [1] [v1.0.0] Make the script independent of the data-model.
-  * [X] [1] [v0.0.2] Log to one separate file per run, the filename being `uploader-<timestamp>`.
+  * [X] [1] [v0.0.2] Log to one separate file per run, the filename being `uploader-<timestamp>.log`.

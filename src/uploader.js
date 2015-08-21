@@ -15,31 +15,13 @@ program
   .option('-f, --filename [name]', 'Path to input file')
   .option('-h, --host [host]', 'ES host')
   .option('-p, --port [port]', 'ES port')
+  .option('-i, --index [index]', 'ES index')
   .parse(process.argv);
 
 var filename = program.filename ? program.filename :null,
   host = program.host ? program.host : 'localhost',
-  port = program.port ? program.port : '9200';
-
-var uploadForfile = function(input){
-  var arr = [];
-  return reader.readCSV(input, arr)
-    .then(function(data) {
-      return processor.process(data);
-    },
-    function(err) {
-      winston.error('UPLOADER - Unable to read CSV ' + input + ': ' + err);
-    })
-    .then(function(data1) {
-      winston.info('UPLOADER - Sending ' + _.size(data1) + ' entries to writer.');
-      return writer.writeBulk('uk_police_data_test', 'police_report', data1);
-    })
-    .then(function(){
-      winston.info('UPLOADER - Done uploading ' + _.size(arr) + ' entries.');
-      arr = null;
-      winston.info('UPLOADER - Memory cleared for ' + input);
-    });
-};
+  port = program.port ? program.port : '9200',
+  index = program.index ? program.index : 'uk_police';
 
 var timestamp = fs._toUnixTimestamp(new Date()).toString(),
   timestamp_truncate = timestamp.substring(0, timestamp.indexOf('.')),
@@ -53,16 +35,38 @@ winston.add(winston.transports.File, {
   logstash: true
 });
 
-winston.info('LOGGING TO: ' + logger_name);
-
 winston.info('\n--------------------------' +
   '\nUK Police data uploader' +
   '\n--------------------------' +
   '\nRunning with options:' +
   '\nFile:\t' + filename +
   '\nHost:\t' + host + 
-  '\nPort:\t' + port + '\n\n');
+  '\nPort:\t' + port + 
+  '\nIndex:\t' + index + '\n\n');
 
+
+
+var uploadForfile = function(input){
+  var arr = [];
+  return reader.readCSV(input, arr)
+    .then(function(data) {
+      return processor.process(data);
+    },
+    function(err) {
+      winston.error('UPLOADER - Unable to read CSV ' + input + ': ' + err);
+    })
+    .then(function(data1) {
+      winston.debug('UPLOADER - Sending ' + _.size(data1) + ' entries to writer.');
+      return writer.writeBulk(index, 'police_report', data1);
+    })
+    .then(function(){
+      winston.info('UPLOADER - Done uploading ' + _.size(arr) + ' entries.');
+      arr = null;
+      winston.debug('UPLOADER - Memory cleared for ' + input);
+    });
+};
+
+// OPEN ES CONNECTION
 writer.open(host, port);
 
 if(filename !== null) {
